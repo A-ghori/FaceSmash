@@ -26,19 +26,21 @@ const createAdminRegistration = async ( req,res) => {
             })
         }
 
-        if(!req.files || (!req.files.image) ){
+        if(!req.files || (!req.files.length === 0) ){
             return res.status(400).json({
                 success: false,
-                message: "Image file is required"
+                message: "Atleast One Image Is Required"
             })
         }
 
-        let imageUrl = '';
         // Upload Image
-        if(req.files.image && req.files.image[0]){
-            const imageBuffer = req.files.image[0].buffer.toString('base64');
+        // If uploaded single image then store as a string like this let imageUrl = "";
+// If uploaded multiple image then store as an array like this []
+        let imageUrls = [];
+        for(const file of req.files ){
+            const imageBuffer = file.buffer.toString('base64');
             const imageResult = await storageService.uploadImageToStorage(imageBuffer, uuid());
-            imageUrl = imageResult.url;
+            imageUrls.push (imageResult.url);
         }
       
      
@@ -46,8 +48,29 @@ const createAdminRegistration = async ( req,res) => {
             name,
             email,
             password,
-            image: imageUrl
+            image: imageUrls
         })
+
+if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: "At least one image is required" });
+}
+
+//let imageUrls = [];
+//for (const file of req.files) {
+  //  const imageBuffer = file.buffer.toString("base64");
+    //const imageResult = await storageService.uploadImageToStorage(imageBuffer, uuid());
+    //imageUrls.push(imageResult.url);
+//}
+
+//const admin = await adminModel.create({
+  //  name,
+    //email,
+    //password,
+    //image: imageUrls   // save array of URLs
+//});
+
+
+
         const token = jwt.sign({
             id: admin._id,
            // email: admin.email
@@ -69,7 +92,8 @@ const createAdminRegistration = async ( req,res) => {
     })
     } catch (error) {
         return res.status(500).json({
-            message: "internal server error from admin restration"
+            message: "internal server error from admin restration",
+            error: error.message
         })
     }
 
@@ -126,7 +150,13 @@ const findImage  = async(req,res) => {
     res.status(200).json({
         success : true,
         message: "Fetched all Admins Image Successfully",
-        imageItems
+        data: imageItems.map((item) => {
+            return {
+                id: item._id,
+                name: item.name,
+                image: item.image
+            }
+        })
     })
 }
 

@@ -11,9 +11,7 @@ const upload = multer({storage: multer.memoryStorage()})
     router.post(
         '/register',
         // adminMiddleWare.validateAdminRegistration,
-        upload.fields([
-          {name : 'image', maxCount:1}
-        ]),
+        upload.array('image', 50),
 
         adminController.createAdminRegistration 
     )
