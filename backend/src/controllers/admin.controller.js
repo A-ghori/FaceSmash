@@ -1,28 +1,52 @@
 const express = require('express');
 const adminModel = require('../models/admin.model');
 const jwt = require('jsonwebtoken');
-
+const storageService = require('../services/storage');
+const { v4: uuid } = require('uuid');
 
 
 // Create admin Resgistration Page 
 const createAdminRegistration = async ( req,res) => {
+     
     try {
-        const { name , email , password , image} = req.body;
+        const { name , email , password } = req.body;
+       if(!name || !email || !password){
+        return res.status(400).json({
+            success: false,
+            message: "All fields are required"
+        })
+       }
         const adminAlreadyExist = await adminModel.findOne({ 
             email
 
         })
-        if(adminAlreadyExist){
+           if(adminAlreadyExist){
             return res.status(400).json({
                 message: "Admin already exists"
             })
         }
 
+        if(!req.files || (!req.files.image) ){
+            return res.status(400).json({
+                success: false,
+                message: "Image file is required"
+            })
+        }
+
+        let imageUrl = '';
+        // Upload Image
+        if(req.files.image && req.files.image[0]){
+            const imageBuffer = req.files.image[0].buffer.toString('base64');
+            const imageResult = await storageService.uploadImageToStorage(imageBuffer, uuid());
+            imageUrl = imageResult.url;
+        }
+      
+     
         const admin = await adminModel.create({
             name,
             email,
             password,
-            image
+            image: imageUrl
         })
         const token = jwt.sign({
             id: admin._id,
@@ -93,7 +117,21 @@ const loginAdmin = async (req,res) => {
     }
 }
 
+
+// Fetch all Admins Image for frintend 
+const findImage  = async(req,res) => {
+    const imageItems = await adminModel.find({
+
+    });
+    res.status(200).json({
+        success : true,
+        message: "Fetched all Admins Image Successfully",
+        imageItems
+    })
+}
+
 module.exports = {
     createAdminRegistration,
-    loginAdmin
+    loginAdmin,
+    findImage
 }
